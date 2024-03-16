@@ -448,7 +448,61 @@ bibliography: references.bib
 ---
 Ensure that all other keys are correctly formatted as well. If there are any other errors, address them accordingly. Once you've made the corrections, try running the command again.
 
+The "(table-1 ?)" placeholder suggests that the reference to the table with label "table-1" is not resolved properly, likely because the table label is not defined or recognized correctly. To resolve this issue and ensure that the correct table label is displayed in your PDF, you need to ensure that:
 
+The table label is defined correctly in your R Markdown document.
+The label used in the reference matches the label defined for the table.
+Here's how you can fix it:
+
+Ensure Proper Label Definition: Make sure that you have defined the label correctly for your table. This is typically done using the label option within the R Markdown code chunk that generates the table.
+
+For example:
+
+{r
+Copy code
+library(knitr)
+kable(head(alberta_causes_death, 15))
+In this example, table-1 is the label assigned to the table.
+
+Correct Reference Usage: In the text of your document, ensure that you're referencing the table using the correct label. The reference format should be @table-1 to reference the table labeled as "table-1".
+
+For example:
+"As shown in Table @ref{table-1}, the top 15 rows of the dataset are displayed."
+
+By ensuring that the label used in the reference matches the label defined for the table, you can resolve the issue of the placeholder "(table-1 ?)" in your PDF. If the issue persists, double-check the label definitions and references in your R Markdown document to ensure consistency.
+
+
+
+
+User
+how to add in kable(
+    col.names = c("Year", "Cause", "Ranking", "Deaths", "Years"),
+    align = c("l", "r", "r", "r", "r"),
+    digits = 0, booktabs = TRUE, linesep = ""
+  )
+ChatGPT
+To add the specified options (col.names, align, digits, booktabs, linesep) to the kable() function, you simply include them as arguments within the function call. Here's how you can do it:
+
+r
+Copy code
+library(knitr)
+
+kable(
+  head(alberta_causes_death, 15),
+  col.names = c("Year", "Cause", "Ranking", "Deaths", "Years"),
+  align = c("l", "r", "r", "r", "r"),
+  digits = 0,
+  booktabs = TRUE,
+  linesep = ""
+)
+In this example:
+
+col.names specifies the column names to be displayed in the table.
+align specifies the alignment of each column (l for left, r for right).
+digits specifies the number of digits after the decimal point for numeric columns.
+booktabs specifies whether to use the booktabs formatting style (TRUE for yes, FALSE for no).
+linesep specifies the line separator between rows in the table.
+Adjust these options according to your specific requirements.
 
 
 
