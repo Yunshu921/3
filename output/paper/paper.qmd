@@ -12,18 +12,33 @@ toc: TRUE
 number-sections: true
 bibliography: references.bib
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.pos = "h", out.extra = "")
+
+# Load libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+# Read in data
+alberta_causes_death <- read_csv(here::here("inputs/data/deaths_leading_causes_cleaned.csv"))
+
+```
 
 
 
 # Introduction
 
-Due to the development of economy, the progress of medical and the electronization of life, our life expectancy has remarkably increased. We can perceive this point by the higher risk of developing chronic diseases compared to the past @cite2016. An aging population is a problem endemic to the Western and industrialized countries. Therefore, by analyzing data about causes of death, we can provide insights to improve the old-age survival. More importantly, normal people can take the information as one's heath guideline. To be more specifically, we can take aged parents to do health check for checking specific and prevalent diseases.
+Due to the development of economy, the progress of medical and the electronization of life, our life expectancy has remarkably increased. We can perceive this point by the higher risk of developing chronic diseases compared to the past [@cite2016]. An aging population is a problem endemic to the Western and industrialized countries. Therefore, by analyzing data about causes of death, we can provide insights to improve the old-age survival. More importantly, normal people can take the information as one's heath guideline. To be more specifically, we can take aged parents to do health check for checking specific and prevalent diseases.
 
 In this paper, we will firstly examine the relationship between the time and the number of death for several leading causes of death by using linear regression analysis. Then we will utilize data from leading causes of death in 2022 to fit two models which are Poisson model and the negative binomial model. The estimand is which model fit better in this situation. The result of analysis showed the negative binomial model fit better than Poisson model.
 
 After reviewing literature, they have pointed out the difference between Poisson regression and the negative binomial regression. Thus there is a gap about a specific example which shows advantages of the negative binomial model overweight that of Poisson model. Furthermore, during analying the data, some interesting findings can assist healthcare professionals and public health related department to allocate resources effectively.
 
-In this paper, there are 4 sections, excludes the introduction. In the first section, we review the source of data from the government of Alberta, the advantages and disadvantages of data, methodologies that follow it, and data terminology. In addition, we have some plots to show the distribution of the time and the number of death for several leading causes of death. For the second section, we run two linear regression models and explain each variable in detail. In next section, we will display the results by using tables and plots. In the final section, we discuss our results and point out some weaknesses. This paper is carried out using R (@citeR), the library Tidyverse (@tid), the janitor (@jan), the here (@here) and   were used in this paper. 
+In this paper, there are 4 sections, excludes the introduction. In the first section, we review the source of data from the government of Alberta, the advantages and disadvantages of data, methodologies that follow it, and data terminology. In addition, we have some plots to show the distribution of the time and the number of death for several leading causes of death. For the second section, we run two linear regression models and explain each variable in detail. In next section, we will display the results by using tables and plots. In the final section, we discuss our results and point out some weaknesses. 
+
+This paper is carried out using statistical programming language `R` [@citeR], the library `tidyverse` [@tid] for preparation and analysis of data, the `janitor` [@jan], the `here` [@here] for read data,  the `ggplot2` for generating figures, the `dplyr` [@dp], and   were used in this paper. 
 
 
 
@@ -31,7 +46,79 @@ In this paper, there are 4 sections, excludes the introduction. In the first sec
 
 ## Data Description and Methodology
 
-The dataset used in this paper is from the open data of government of Alberta and can be freely downloaded at their website (@2022). This dataset was created at 2015 May 13 and last modification was done at 2023 Sept 22. The update frequency is annual and the publisher is Service Alberta. We use this dataset not another privince since the representation of data in this dataset is clear and concise. At the same time, the goverment of Alberta has collected data regarding economy and finance, society and communities, employment and labour, environment, health and wellness, government, agriculture and other varied topics. The goverment of Alberta keeps records on a weekly,monthly, and yearly data.
+The dataset used in this paper is from the open data of government of Alberta and can be freely downloaded at their website [@2022]. This dataset was created at 2015 May 13 and last modification was done at 2023 Sept 22. The update frequency is annual and the publisher is Service Alberta. We use this dataset not another dataset of other province since the representation of data in this dataset is clear and concise. There are some similar datasets, but the one we used is the more suitable for testing Poisson and the negative binomial models. At the same time, the government of Alberta has collected data regarding economy and finance, society and communities, employment and labour, environment, health and wellness, government, agriculture and other varied topics. The government of Alberta keeps records on a weekly,monthly, and yearly data.
+
+The dataset consist first 30 leading causes of death from 2001 to 2022 and each cause has the corresponding number of deaths. In summary, there are 666 rows which contain four rows of descriptive words and two repeated ranking rows at row 34 and row 35. That is there are 664 variables. 
+
+
+## Data Visualization
+
+Now, we can explore this dataset by using ggplot2 packages [@gg] and and we found some interesting things such as some diseases just showed recently, for example the COVID-19.
+```{r}
+#| echo: false
+#| warning: false
+#| label: tbl-data
+#| tbl-cap: "A summary table of cleaned data"
+
+library(knitr)
+kable(head(alberta_causes_death, 15))
+
+
+```
+@tbl-data shows the detail of our dataset.
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: tbl-data-2
+#| tbl-cap: "A summary table of leading causes of death"
+
+library(knitr)
+
+alberta_cod_top_eight <-
+   alberta_causes_death |>
+  filter(
+    calendar_year == 2022,
+    n == 22
+  ) |>
+  slice_max(order_by = desc(ranking), n = 4) |>
+  pull(cause)
+
+alberta_causes_death <-
+  alberta_causes_death |>
+  filter(cause %in% alberta_cod_top_eight)
+
+kable(head(alberta_causes_death, 15))
+
+```
+ @tbl-data-2 shows
+```{r}
+#| label: fig-1
+#| fig-cap: distribution of these deaths
+#| echo: false
+#| warning: false
+
+library(ggplot2)
+alberta_causes_death |>
+  ggplot(aes(x = calendar_year, y = total_deaths, color = cause)) +
+  geom_line() +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Year", y = "Annual number of deaths in Alberta") +
+  facet_wrap(vars(cause), dir = "v", ncol = 1) +
+  theme(legend.position = "none")
+
+```
+
+
+@fig-1 shows
+```{r}
+#| label: fig-3
+#| fig-cap: distribution of these deaths
+#| echo: false
+#| warning: false
+```
+
 
 
 
