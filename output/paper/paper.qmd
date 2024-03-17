@@ -1,6 +1,6 @@
 ---
 title: "Analysis the leading causes of death in Alberta"
-subtitle: "Comparison the Poisson with negative binomial models"
+subtitle: "Reproduce the comparison the Poisson with negative binomial models from 'Telling Stories with Data' [@alexander_2023]."
 author: "Yunshu Zhang"
 thanks: "Code and data are available at: https://github.com/Yunshu921/mortality_in_Alberta.git."
 format: pdf
@@ -41,7 +41,7 @@ After reviewing literature, they have pointed out the difference between Poisson
 
 In this paper, there are 4 sections, excludes the introduction. In the first section, we review the source of data from the government of Alberta, the advantages and disadvantages of data, methodologies that follow it, and data terminology. In addition, we have some plots to show the distribution of the cause and the number of death for several leading causes of death. For the second section, we run two linear regression models and explain each variable in detail. In next section, we will display the results by using tables and plots. In the final section, we discuss our results and point out some weaknesses.
 
-This paper is carried out using statistical programming language `R` [@citeR], the library `tidyverse` [@tid] for preparation and analysis of data, the `janitor` [@jan], the `here` [@here] for read data, the `ggplot2` for generating figures, the `dplyr` [@dp], and we run the model in `R` [@citeR] using the `rstanarm` package [@rstanarm], the `boom` package [@boom], the `boom.Mixed` package [@bm].
+This paper is carried out using statistical programming language `R` [@citeR], the library `tidyverse` [@tid] for preparation and analysis of data, the `janitor` [@jan], the `here` [@here] for read data, the `ggplot2` for generating figures, the `dplyr` [@dp], and we run the model in `R` [@citeR] using the `rstanarm` package [@rstanarm], the `boom` package [@boom], and the `boom.Mixed` package [@bm]. Since this paper is a reproduction of 'Telling Stories with Data' [@alexander_2023], some similar code were used.
 
 # Data {#sec-data}
 
@@ -160,12 +160,8 @@ alberta_causes_death |>
 library(knitr)
 library(dplyr)
 
-# Filter the data for the year 2022
-alberta_2022 <- alberta_causes_death %>%
-  filter(calendar_year == 2022)
-
 # Calculate summary statistics by cause
-summary_stats_2022 <- alberta_2022 %>%
+summary_stats <- alberta_causes_death %>%
   summarize(
     Min = min(total_deaths),
     Mean = mean(total_deaths),
@@ -181,18 +177,18 @@ col_names <- c("Min Deaths", "Mean Deaths", "Max Deaths", "SD", "Var", "N")
 align <- c("r", "r", "r", "r", "r", "r")
 
 # Format the summary statistics as a data frame
-summary_stats_2022_df <- data.frame(
-  `Min Deaths` = summary_stats_2022$Min,
-  `Mean Deaths` = summary_stats_2022$Mean,
-  `Max Deaths` = summary_stats_2022$Max,
-  `SD` = summary_stats_2022$SD,
-  `Var` = summary_stats_2022$Var,
-  `N` = summary_stats_2022$N
+summary_stats_df <- data.frame(
+  `Min Deaths` = summary_stats$Min,
+  `Mean Deaths` = summary_stats$Mean,
+  `Max Deaths` = summary_stats$Max,
+  `SD` = summary_stats$SD,
+  `Var` = summary_stats$Var,
+  `N` = summary_stats$N
 )
 
 # Print the table using kable
 kable(
-  summary_stats_2022_df,
+  summary_stats_df,
   col.names = col_names,
   align = align,
   digits = 0,
@@ -204,7 +200,7 @@ kable(
 
 ```
 
-@tbl-data-4 shows the summary of statistic of total deaths of 2022 in Alberta. In this table, we notice that the mean, 723, is different to the variance, 355,047.
+@tbl-data-4 shows the summary of statistic of total deaths in Alberta. In this table, we notice that the mean, 437, is different to the variance, 190,696.
 
 # Model
 
@@ -216,7 +212,7 @@ Now we can use the `rstanarm` package [@rstanarm] to fit two models: Poisson and
 #| results: false
 
 
-cause_of_death_alberta_poisson <-
+alberta_poisson <-
   stan_glm(
     total_deaths ~ cause,
     data = alberta_causes_death,
@@ -224,7 +220,7 @@ cause_of_death_alberta_poisson <-
     seed = 996
   )
 
-cause_of_death_alberta_neg_binomial <-
+alberta_neg_binomial <-
   stan_glm(
     total_deaths ~ cause,
     data = alberta_causes_death,
@@ -240,13 +236,13 @@ cause_of_death_alberta_neg_binomial <-
 #| echo: false
 #| warning: false
 #| label: tbl-model-1
-#| tbl-cap: Modeling the most prevalent cause of deaths in Alberta, 2001-2020
+#| tbl-cap: Modeling the most prevalent cause of deaths in Alberta, 2001-2021
 
 
 modelsummary(
   list(
-    "Poisson" = cause_of_death_alberta_poisson,
-    "Negative binomial" = cause_of_death_alberta_neg_binomial
+    "Poisson" = alberta_poisson,
+    "Negative binomial" = alberta_neg_binomial
   )
 )
 ```
@@ -255,26 +251,111 @@ modelsummary(
 
 \newpage
 
-
 ## Model equation
 
-Following an exploratory analysis of the dataset,
+Firstly, we can get the Poisson probability mass function which is same as the negative binomial is [@pitman_1993] $$ 
+P(X=k)= e^{-λ}λ^k/k!, for\\k = 0,1,2,3,...
+$$
 
-The ultimate model is presented below.
+Following an exploratory analysis of the dataset, the ultimate model is presented below.
 
 $$ 
-Yij = β0 + β1Xij + εij
-$$ where:
+y_{i}|λ_{i} \sim Poisson \\
+log_{e}(λ_{i}) = β_{0} + β_{1} \times cause_{i}
+$$
 
--   $Y_{ij}$ is the Permanent Inflow Rate for observation j in year i.
--   $X_{ij}$ is the Employment Rate for observation j in year i.
--   $\beta_0$ is the intercept or constant term, which represents the expected value of Permanent Inflow Rate when the Employment Rate is equal to zero.
--   $\beta_1$ is the slope coefficient or the estimated change in Permanent Inflow Rate for a one-unit increase in the Employment Rate.
--   $\epsilon_{ij}$ is the error term or the deviation of the actual value of Permanent Inflow Rate from the predicted value based on the regression equation.
+where:
+
+-   $y_{i}|\lambda_{i}$ is the number of deaths for different causes.
+-   $\lambda_{i}$ is the intercept which means the basic mortality without any causes we control.
+-   $\beta_0$ is the intercept or constant term, which represents the expected value of basic mortality when there is no active cause that we interested.
+-   $\beta_1$ is the coefficient or the estimated change in mortality for a change in the cause.
+-   $cause_{i}$ is the cause of the death.
+
+In specific, we have two equations of mortality for two models:
+
+Firstly, since $$ 
+y_{i} = e^{log_{e}(λ_{i})}
+$$ We can have two equations such that $$ 
+y_{i} = e^{log_{e}(λ_{i})} = e^{7.037 + 0.446I_{1} + 0.224I_{2} + 0.046I_{3}}, for\ Poisson \ Model\\
+y_{i} = e^{log_{e}(λ_{i})} = e^{7.039 + 0.446I_{1} + 0.221I_{2} + 0.043I_{3}}, for\ Negative\ Binomial\ Model
+$$ where
+
+-   $I_{1}$ means the indicator function such that if this cause happened, that is all other forms of chronic ischemic heart disease, then we get the function value of 1.Otherwise, we get the function value of 0
+
+-   $I_{2}$ represents the indicator function such that if this cause happened, that is malignant neoplasms of trachea, bronchus and lung, then we get the function value of 1.Otherwise, we get the function value of 0
+
+-   $I_{3}$ is the indicator function such that if this cause happened, that is organic dementia, then we get the function value of 1.Otherwise, we get the function value of 0
 
 # Results
 
+## Comparing posterior predictive checks for Poissson model and Negative binomial model
+
+Since two equations have similar estimates in each row and from 'Telling Stories with Data' [@alexander_2023], we can use function `pp_check` in the `rstanarm` package [@rstanarm] to compare these two models. This involves comparing the observed outcome variable with simulations generated from the posterior distribution.
+
+```{r}
+#| label: fig-2
+#| fig-cap: Poisson model
+#| echo: false
+#| warning: false
+
+pp_check(alberta_poisson) +
+  theme(legend.position = "bottom")
+
+```
+
+```{r}
+#| label: fig-3
+#| fig-cap: Negative binomial model.
+#| echo: false
+#| warning: false
+pp_check(alberta_neg_binomial) +
+  theme(legend.position = "bottom")
+
+```
+
+@fig-2 and @fig-3 are fitted plots of the Poisson model and Negative binomial model, where the dark and bold lines indicate that the negative binomial approach is a better choice for our circumstance.
+
+Lastly, from 'Telling Stories with Data' [@alexander_2023], we can assess and compare models using the leave-one-out (LOO) cross-validation (CV) resampling method. This approach is a form of cross-validation where each fold consists of only one observation.
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: tbl-data-5
+#| tbl-cap: Compared data frame
+
+poisson <- loo(alberta_poisson, cores = 2)
+neg_binomial <- loo(alberta_neg_binomial, cores = 2)
+
+loo_compare(poisson, neg_binomial)
+
+```
+
+@tbl-data-5 shows the result of comparison. Since the Negative binomial has higher value in ELPD than Poisson has, the Negative binomial model is our optimal model.
+
+\newpage
+
 # Discussion
+
+## General prosess of this paper
+
+In section three, namely the model section, we firstly examine the formula of Poisson regression. Based on the result from the data visualization, we can know that the SD and Variance of total death we want to do research is not equal. This means Poisson may not the best choice for this situation. Therefore we introduce the negative binomial regression. In the next section, we used two models to fit same dataset. At the beginning of the thing, @table-model-1 showed almost identical statistic. After applying posterior predictive checks and the leave-one-out (LOO) cross-validation (CV) resampling method, we get @fig-2, @fig-3, and @tbl-data-5. From two fit lines, we can clear infer that the negative binomial model is our optimal solution for this dataset.
+
+## Organic dementia has taking top one cause of death
+
+From the @fig-1, we can find that the cause of death: organic dementia has irresistibly risen to the top cause of death. After exploring the literature around the word, we find two main reason behind this. The first reason is the spectacular longevity gains. As people's lifespans extend, the likelihood of developing senile dementia also increases. And I think may not the most important reason is that dementia can easily be triggered by other illnesses. For example, from the article published at The Lancet Neurology [@2005], having a stroke will increase the risk of dementia greatly.
+
+## Some inspiration about the leading cause of death
+
+In the real life, data analysis about leading cause of death helps reveals the secret of different disease and shows the truth gradually. From the article: Insight on ‘typical’ longevity: An analysis of the modal lifespan by leading causes of death in Canada [@cite2016], the greatest gap in modal age-at-death estimates is seen between lung cancer and cardiovascular diseases. When we look at the long time range, from 1974 to 2011, for male, there was a 10 year gap between lung cancer and cardiovascular diseases. For female, there was a nearly 15 years gap between lung cancer and cardiovascular diseases. These two gaps maintained for almost 40 years. Although the modal age is postpones, the difference of two cause of death doesn't change. From this point, doctors in hospital can make more targeted judgments about different diseases.
+
+## Weaknesses
+
+During constructing the model, we can find the @tbl-model-1 only has three predictors not four. In this part, we need to examine the principle behind the code. I think give a more detail explanation should be a better solution. In addition, for the overall logic of this paper, we need do more work. For instance, we should use concise and simple sentence to interpret relative complex definitions.
+
+## Improvement
+
+We are supposed to do more examples related to comparing different models. Because in this way we can learn thing better. At the same time, we need read and pracice all the time to keep our mind clear and positive. For this paper, I think the detail of processing data and the wording can be improved.
 
 \newpage
 
