@@ -10,6 +10,60 @@ The "size" parameter in a negative binomial distribution represents the number o
 
 So, in this case, you're simulating 30 observations where each observation represents the number of failures before observing the 20th success, with each success having a probability of 0.1.
 
+User
+modelsummary(list(
+    "Poisson" = cause_of_death_alberta_poisson,
+    "Negative binomial" = cause_of_death_alberta_neg_binomial)
+
+ChatGPT
+It seems like you're trying to summarize two different statistical models, one using a Poisson distribution and the other using a negative binomial distribution. However, your code snippet is incomplete. It appears you're using R syntax, but the modelsummary function you're calling isn't standard R syntax.
+
+Assuming you want to compare the models using a summary function, you might consider using standard R functions like summary() or glance() from the broom package to summarize the models. Here's how you might do it:
+
+R
+Copy code
+# Assuming cause_of_death_alberta_poisson and cause_of_death_alberta_neg_binomial 
+# are objects representing the fitted models
+
+library(broom)
+
+# Summarize Poisson model
+poisson_summary <- glance(cause_of_death_alberta_poisson)
+
+# Summarize Negative Binomial model
+neg_binomial_summary <- glance(cause_of_death_alberta_neg_binomial)
+
+# Combine summaries
+model_summaries <- list(
+  "Poisson" = poisson_summary,
+  "Negative binomial" = neg_binomial_summary
+)
+
+model_summaries
+This code will provide summary statistics for each of your models, allowing you to compare them more easily. If you want more detailed summaries, you might want to use summary() instead of glance(), as summary() often provides more detailed output specific to the model type.
+
+User
++ model_summaries <- list(
++   "Poisson" = poisson_summary,
++   "Negative binomial" = neg_binomial_summary
++ )
++ model_summaries
+Error: unexpected symbol in:
+")
+model_summaries"
+ChatGPT
+Apologies for the confusion. It seems like you're trying to directly print model_summaries without closing the previous line of code properly. Here's the corrected code:
+
+R
+Copy code
+model_summaries <- list(
+  "Poisson" = poisson_summary,
+  "Negative binomial" = neg_binomial_summary
+)
+
+model_summaries
+This should now print out the model_summaries list containing the summaries of your Poisson and Negative Binomial models.
+
 alberta_cod <-
   read_csv(
     "https://open.alberta.ca/dataset/03339dc5-fb51-4552-97c7-853688fc428d/resource/3e241965-fee3-400e-9652-07cfbf0c0bda/download/deaths-leading-causes.csv",
